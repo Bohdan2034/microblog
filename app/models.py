@@ -20,6 +20,19 @@ followers = sa.Table(
               primary_key=True)
 )
 
+
+
+#таблиця для збереження лайків користувачів
+post_likes = sa.Table(
+    'post_likes',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'),
+              primary_key=True),
+    sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'),
+              primary_key=True)
+)
+
+
 class User(UserMixin, db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
@@ -30,6 +43,11 @@ class User(UserMixin, db.Model):
 
     posts: so.WriteOnlyMapped['Post'] = so.relationship(
         back_populates='author')
+
+    # Пости яким користувач поставив лайк
+    liked_posts: so.WriteOnlyMapped['Post'] = so.relationship(
+        secondary=post_likes,
+        back_populates='liked_by')
 
     about_me: so.Mapped[Optional[str]] = so.mapped_column(sa.String(140))
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
@@ -109,6 +127,19 @@ class User(UserMixin, db.Model):
         return db.session.get(User, id)
 
 
+    def like_post(self, post):
+        if not self.has_liked_post(post):
+            self.liked_posts.add(post)
+
+    def unlike_post(self, post):
+        if self.has_liked_post(post):
+            self.liked_posts.remove(post)
+
+    def has_liked_post(self, post):
+        query = self.liked_posts.select().where(Post.id == post.id)
+        return db.session.scalar(query) is not None
+
+
 class Post(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     body: so.Mapped[str] = so.mapped_column(sa.String(140))
@@ -119,10 +150,20 @@ class Post(db.Model):
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')
 
+    liked_by: so.WriteOnlyMapped['User'] = so.relationship(
+        secondary=post_likes,
+        back_populates='liked_posts',
+        passive_deletes=True)
+
+    def likes_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.liked_by.select().subquery())
+        return db.session.scalar(query)
+
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+
 
 @login.user_loader
 def load_user(id):
     return db.session.get(User, int(id))
-

@@ -9,6 +9,7 @@ from logging.handlers import RotatingFileHandler
 import os
 from flask_mail import Mail
 from flask_moment import Moment
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -16,6 +17,7 @@ login = LoginManager(app)
 login.login_view = 'login'
 mail = Mail(app)
 moment = Moment(app)
+csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)

@@ -20,6 +20,8 @@ from app.models import Post
 from app.forms import ResetPasswordRequestForm
 from app.email import send_password_reset_email
 from app.forms import ResetPasswordForm
+from flask import abort
+from app.models import post_likes
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -211,3 +213,82 @@ def reset_password(token):
         flash('Your password has been reset.')
         return redirect(url_for('login'))
     return render_template('reset_password.html', form=form)
+
+@app.route('/edit_post/<int:post_id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(post_id):
+    post = db.get_or_404(Post, post_id)
+
+    if post.user_id != current_user.id:
+        abort(403) #чужі
+
+    form = PostForm()
+
+    if form.validate_on_submit():
+        post.body = form.post.data
+        db.session.commit()
+        flash('Your post has been updated.')
+        return redirect(url_for('index'))
+
+    elif request.method == 'GET':
+        form.post.data = post.body
+
+    return render_template('edit_post.html',
+                           title='Edit Post', form=form)
+
+
+
+@app.route('/delete_post/<int:post_id>', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = db.get_or_404(Post, post_id)
+
+    if post.user_id != current_user.id:
+        abort(403)
+
+    form = EmptyForm()
+
+    if form.validate_on_submit():
+
+        db.session.execute(
+            post_likes.delete().where(
+                post_likes.c.post_id == post.id
+            )
+        )
+
+        db.session.delete(post)
+        db.session.commit()
+
+        flash('Your post has been deleted.')
+        return redirect(url_for('index'))
+
+    abort(400)
+
+
+@app.route('/like_post/<int:post_id>', methods=['POST'])
+@login_required
+def like_post(post_id):
+    post = db.get_or_404(Post, post_id)
+    form = EmptyForm()
+
+    if form.validate_on_submit():
+        current_user.like_post(post)
+        db.session.commit()
+        return redirect(url_for('index'))
+
+    abort(400)
+
+
+
+@app.route('/unlike_post/<int:post_id>', methods=['POST'])
+@login_required
+def unlike_post(post_id):
+    post = db.get_or_404(Post, post_id)
+    form = EmptyForm()
+
+    if form.validate_on_submit():
+        current_user.unlike_post(post)
+        db.session.commit()
+        return redirect(url_for('index'))
+
+    abort(400)
