@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="row align-items-start mb-4">
+        <div class="col-auto">
+            <img src="{{ user.avatar(128) }}" class="rounded" alt="{{ user.username }}">
+        </div>
+        <div class="col">
+            <h1>User: {{ user.username }}</h1>
+            {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+            {% if user.last_seen %}<p class="text-muted">Last seen on: {{ moment(user.last_seen).fromNow() }}</p>{% endif %}
+            <p>{{ user.followers_count() }} followers, {{ user.following_count() }} following.</p>
+            {% if user == current_user %}
+            <p><a href="{{ url_for('edit_profile') }}" class="btn btn-outline-secondary btn-sm">Edit your profile</a></p>
+            {% elif not current_user.is_following(user) %}
+            <p>
+                <form action="{{ url_for('follow', username=user.username) }}" method="post">
+                    {{ form.hidden_tag() }}
+                    {{ form.submit(value='Follow', class='btn btn-primary btn-sm') }}
+                </form>
+            </p>
+            {% else %}
+            <p>
+                <form action="{{ url_for('unfollow', username=user.username) }}" method="post">
+                    {{ form.hidden_tag() }}
+                    {{ form.submit(value='Unfollow', class='btn btn-outline-primary btn-sm') }}
+                </form>
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    <hr>
+
+    {% for post in posts %}
+        {% include '_post.html' %}
+    {% endfor %}
+
+    {% if prev_url or next_url %}
+    <nav aria-label="User posts navigation" class="mt-4">
+        <ul class="pagination">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url or '#' }}">Newer posts</a>
+            </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url or '#' }}">Older posts</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+<div class="row border-bottom py-3 align-items-start">
+    <div class="col-auto">
+        <img src="{{ post.author.avatar(36) }}" class="rounded" alt="{{ post.author.username }}">
+    </div>
+    <div class="col">
+        <a href="{{ url_for('user', username=post.author.username) }}" class="fw-semibold text-decoration-none">
+            {{ post.author.username }}
+        </a>
+        <span class="text-muted">says {{ moment(post.timestamp).fromNow() }}:</span>
+        <p class="mb-0 mt-1">{{ post.body }}</p>
+    </div>
+</div>

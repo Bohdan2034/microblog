@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1 class="mb-4">Hi, {{ current_user.username }}!</h1>
+    {% if form %}
+    <form action="" method="post" class="mb-4">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.post.label(class="form-label") }}
+            {{ form.post(cols=32, rows=4, class="form-control") }}
+            {% for error in form.post.errors %}
+            <div class="text-danger small mt-1">[{{ error }}]</div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+    </form>
+    {% endif %}
+
+    {% for post in posts %}
+        {% include '_post.html' %}
+    {% endfor %}
+
+    {% if prev_url or next_url %}
+    <nav aria-label="Posts navigation" class="mt-4">
+        <ul class="pagination">
+            <li class="page-item{% if not prev_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ prev_url or '#' }}">Newer posts</a>
+            </li>
+            <li class="page-item{% if not next_url %} disabled{% endif %}">
+                <a class="page-link" href="{{ next_url or '#' }}">Older posts</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+{% endblock %}
